@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Embed Video Gallery • Modern Collection</title>
+  <meta name="description" content="Modern responsive video gallery with embed player, search, categories, and modal lightbox. Lightweight and free to deploy.">
+  <meta name="robots" content="index, follow">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="Embed Video Gallery • Modern Collection">
+  <meta property="og:description" content="Browse and play embed videos in a beautiful dark-themed gallery with modal player.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://picsum.photos/id/10/1200/630">
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['Space Grotesk', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            surface: {
+              900: '#0a0a0b',
+              800: '#121214',
+              700: '#1a1a1e',
+              600: '#232328',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-surface-900 text-zinc-200 min-h-screen font-sans antialiased">
+  <!-- Header -->
+  <header class="sticky top-0 z-40 border-b border-zinc-800/80 bg-surface-900/90 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 gap-4">
+        <!-- Logo -->
+        <a href="index.html" class="flex items-center gap-3 shrink-0 group">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-rose-500/20 group-hover:scale-105 transition">
+            <i class="fas fa-play text-sm"></i>
+          </div>
+          <div class="hidden sm:block">
+            <div class="font-display font-bold text-lg tracking-tight leading-none">Embed Gallery</div>
+            <div class="text-[10px] uppercase tracking-widest text-zinc-500">Premium Collection</div>
+          </div>
+        </a>
+
+        <!-- Search -->
+        <div class="flex-1 max-w-xl">
+          <div class="relative">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+            <input 
+              type="search" 
+              id="searchInput" 
+              placeholder="Cari judul, kategori, atau URL..." 
+              class="w-full bg-surface-800 border border-zinc-700/80 focus:border-rose-500/60 rounded-2xl py-2.5 pl-11 pr-4 text-sm outline-none transition placeholder:text-zinc-500"
+              autocomplete="off"
+            >
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <span id="videoCount" class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-800 border border-zinc-700 text-xs font-medium">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-emerald-400 font-mono">0</span> video
+          </span>
+          <a href="admin.html" class="p-2.5 rounded-xl bg-surface-800 border border-zinc-700 hover:border-rose-500/50 hover:text-rose-400 transition text-sm" title="Admin Panel">
+            <i class="fas fa-cog"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Category Filter -->
+  <div class="border-b border-zinc-800/60 bg-surface-900/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div id="categoryFilters" class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-display font-bold tracking-tight">Video Collection</h1>
+        <p class="text-zinc-400 text-sm mt-1">Klik card untuk memutar di modal player</p>
+      </div>
+      <div class="flex items-center gap-3 text-sm">
+        <label class="text-zinc-500">Urutkan:</label>
+        <select id="sortSelect" class="bg-surface-800 border border-zinc-700 rounded-xl px-3 py-2 outline-none focus:border-rose-500/50">
+          <option value="newest">Terbaru</option>
+          <option value="oldest">Terlama</option>
+          <option value="title">Judul A-Z</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div id="videoGrid" class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
+      <!-- Cards injected here -->
+    </div>
+
+    <!-- Empty / Loading / Error states -->
+    <div id="emptyState" class="hidden text-center py-20">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-surface-800 flex items-center justify-center text-3xl">📭</div>
+      <h3 class="text-xl font-semibold mb-2">Tidak ada video ditemukan</h3>
+      <p class="text-zinc-400 text-sm max-w-md mx-auto">Coba ubah kata kunci pencarian atau pilih kategori lain.</p>
+    </div>
+
+    <div id="loadingState" class="text-center py-20">
+      <div class="inline-block w-10 h-10 border-2 border-zinc-600 border-t-rose-500 rounded-full animate-spin"></div>
+      <p class="mt-4 text-zinc-400 text-sm">Memuat koleksi...</p>
+    </div>
+
+    <!-- Pagination -->
+    <div id="pagination" class="mt-10 flex justify-center items-center gap-2 flex-wrap">
+      <!-- Injected -->
+    </div>
+  </main>
+
+  <!-- Back to top -->
+  <button id="backToTop" class="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 flex items-center justify-center opacity-0 pointer-events-none transition-all z-30" aria-label="Kembali ke atas">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+  <!-- Modal / Lightbox -->
+  <div id="videoModal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" id="modalOverlay"></div>
+    
+    <div class="relative w-full max-w-5xl mx-auto z-10">
+      <!-- Close -->
+      <button id="closeModal" class="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-zinc-900 border border-zinc-700 text-white hover:bg-rose-600 hover:border-rose-500 flex items-center justify-center transition shadow-xl" aria-label="Tutup">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+
+      <div class="bg-surface-800 rounded-2xl sm:rounded-3xl overflow-hidden border border-zinc-700/80 shadow-2xl">
+        <!-- Player -->
+        <div class="relative aspect-video bg-black">
+          <div id="playerLoading" class="absolute inset-0 flex items-center justify-center bg-black z-10">
+            <div class="w-12 h-12 border-2 border-zinc-600 border-t-rose-500 rounded-full animate-spin"></div>
+          </div>
+          <div id="playerContainer" class="w-full h-full">
+            <!-- iframe injected -->
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="px-4 sm:px-6 py-4 border-t border-zinc-800">
+          <h2 id="modalTitle" class="text-lg sm:text-xl font-semibold text-white leading-snug"></h2>
+          <div class="flex flex-wrap items-center gap-3 mt-2 text-sm text-zinc-400">
+            <span id="modalCategory" class="px-2.5 py-0.5 rounded-full bg-zinc-800 text-xs"></span>
+            <span id="modalDate" class="text-xs"></span>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-center text-[11px] text-zinc-500 mt-3">Tekan <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">ESC</kbd> atau klik di luar untuk menutup • Video berhenti otomatis</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-800 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-zinc-500">
+      <p class="font-medium text-zinc-400">Embed Video Gallery</p>
+      <p class="mt-1">Lightweight • Responsive • Modal Player • Free Deploy</p>
+      <p class="mt-3 text-xs">Data dikelola via <code class="text-zinc-400">data/videos.json</code> atau Admin Panel</p>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
