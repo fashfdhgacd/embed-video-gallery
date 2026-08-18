@@ -1,6 +1,6 @@
 /**
  * Colmek Gallery - Main App
- * Style inspired by colmek.site
+ * JSON format: { title, direct, source, category }
  */
 (function () {
   'use strict';
@@ -53,7 +53,7 @@
         id: v.id || i + 1,
         title: v.title || 'Untitled',
         thumbnail: v.thumbnail || '',
-        embedUrl: v.embedUrl || v.embed || v.direct || '',
+        embedUrl: v.direct || v.embedUrl || v.embed || '',
         category: v.category || 'Umum',
         date: v.date || ''
       })).filter(v => v.embedUrl);
@@ -66,8 +66,7 @@
   }
 
   function getHeroVideos() {
-    const pool = allVideos.slice(0, 50);
-    return pool.slice(0, HERO_COUNT);
+    return allVideos.slice(0, HERO_COUNT);
   }
 
   function renderHero() {
@@ -115,7 +114,7 @@
 
   function updateHeroContent(v) {
     $('#heroTitle').textContent = v.title;
-    $('#heroMeta').textContent = `${v.category} • ${v.date || ''}`.trim();
+    $('#heroMeta').textContent = `${v.category}`.trim();
   }
 
   function getCategories() {
@@ -205,11 +204,7 @@
   }
 
   function renderTrending() {
-    const trending = allVideos
-      .filter(v => ['Viral', 'Colmek', 'ABG', 'STW', 'Jilbab'].includes(v.category))
-      .slice(0, 10);
-    const fallback = allVideos.slice(20, 30);
-    const list = trending.length >= 5 ? trending : fallback;
+    const list = allVideos.slice(0, 10);
     const el = $('#trendingGrid');
     el.innerHTML = list.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
@@ -233,7 +228,6 @@
         </div>
         <div class="mt-2.5 px-0.5">
           <h3 class="text-sm font-medium leading-snug line-clamp-2 group-hover:text-red-400 transition-colors">${escapeHtml(v.title)}</h3>
-          <p class="text-[11px] text-neutral-500 mt-1">${escapeHtml(v.date || '')}</p>
         </div>
       </article>
     `;
@@ -258,17 +252,11 @@
     }
 
     let html = '';
-    const maxVisible = 5;
-    let start = Math.max(1, currentPage - 2);
-    let end = Math.min(total, start + maxVisible - 1);
-    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
-
     html += `<button class="page-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-    if (start > 1) html += `<button class="page-btn" data-page="1">1</button>${start > 2 ? '<span class="text-neutral-600 px-1">...</span>' : ''}`;
-    for (let i = start; i <= end; i++) {
+    for (let i = 1; i <= Math.min(total, 7); i++) {
       html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
     }
-    if (end < total) html += `${end < total - 1 ? '<span class="text-neutral-600 px-1">...</span>' : ''}<button class="page-btn" data-page="${total}">${total}</button>`;
+    if (total > 7) html += `<span class="text-neutral-600 px-1">...</span><button class="page-btn" data-page="${total}">${total}</button>`;
     html += `<button class="page-btn" data-page="${currentPage + 1}" ${currentPage === total ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
 
     el.innerHTML = html;
@@ -289,7 +277,7 @@
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
     $('#modalTitle').textContent = video.title;
-    $('#modalMeta').textContent = `${video.category} • ${video.date || ''}`.trim();
+    $('#modalMeta').textContent = video.category || '';
     iframe.src = video.embedUrl;
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
