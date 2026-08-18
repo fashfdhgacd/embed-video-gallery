@@ -4,6 +4,7 @@ html { scroll-behavior: smooth; }
 
 body {
   background-color: #0a0a0a;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Category pills */
@@ -20,6 +21,7 @@ body {
   color: #a3a3a3;
   transition: all 0.2s;
   cursor: pointer;
+  white-space: nowrap;
 }
 .cat-pill:hover {
   border-color: #ef4444;
@@ -56,6 +58,10 @@ body {
 }
 .video-card:hover {
   transform: translateY(-3px);
+}
+.video-card h3 {
+  font-size: 0.8125rem;
+  line-height: 1.35;
 }
 
 /* Pagination */
@@ -96,7 +102,6 @@ body {
   overflow: hidden;
 }
 
-/* Hero slide transition */
 .hero-slide {
   will-change: opacity;
 }
@@ -106,18 +111,11 @@ body {
   width: 6px;
   height: 6px;
 }
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
-}
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
 
-/* Modal animation */
+/* Modal */
 #videoModal:not(.hidden) {
   animation: fadeIn 0.2s ease;
 }
@@ -126,15 +124,56 @@ body {
   to { opacity: 1; }
 }
 
-/* Age gate */
 #ageGate {
   backdrop-filter: blur(8px);
 }
 
-/* Responsive tweaks */
+/* ===== RESPONSIVE ===== */
+
+/* Phone */
 @media (max-width: 640px) {
   .cat-pill {
-    padding: 0.35rem 0.7rem;
-    font-size: 0.7rem;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.68rem;
   }
+  .genre-card {
+    padding: 0.75rem;
+  }
+  .video-card h3 {
+    font-size: 0.75rem;
+  }
+  .page-btn {
+    min-width: 2rem;
+    height: 2rem;
+    font-size: 0.75rem;
+  }
+  #searchToggle,
+  #mobileMenuBtn,
+  #modalClose {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .video-card h3 {
+    font-size: 0.8rem;
+  }
+}
+
+/* Safe area for notched phones */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  #navbar {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+img, iframe, video {
+  max-width: 100%;
 }
