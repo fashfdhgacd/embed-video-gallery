@@ -304,12 +304,29 @@
     });
   }
 
+  function toEmbedUrl(url) {
+    if (!url) return '';
+    // IndoAV: /d/ shows "copy link" in iframe; /e/ is embed player path
+    try {
+      const u = new URL(url);
+      if (u.hostname.includes('indoav.app') && u.pathname.startsWith('/d/')) {
+        u.pathname = u.pathname.replace(/^\/d\//, '/e/');
+        return u.toString();
+      }
+    } catch (_) {}
+    return url;
+  }
+
   function openModal(video) {
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
+    const external = $('#modalOpenExternal');
+    const rawUrl = video.embedUrl || video.direct || '';
+    const embedUrl = toEmbedUrl(rawUrl);
     $('#modalTitle').textContent = video.title;
     $('#modalMeta').textContent = video.category || '';
-    iframe.src = video.embedUrl;
+    iframe.src = embedUrl;
+    if (external) external.href = rawUrl || embedUrl || '#';
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
   }
