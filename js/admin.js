@@ -1,7 +1,6 @@
 /**
  * Admin Panel for Embed Video Gallery
  * Data stored in localStorage for session. Export to commit permanently.
- * WARNING: Authentication is DEMO ONLY. Not secure for production.
  */
 
 (function () {
@@ -9,8 +8,8 @@
 
   const STORAGE_KEY = 'embed_gallery_videos_v1';
   const AUTH_KEY = 'embed_gallery_auth';
-  // DEMO PASSWORD - CHANGE THIS and never use in real production
-  const DEMO_PASSWORD = 'admin123';
+  // Admin password
+  const DEMO_PASSWORD = 'Koleksi Dr. Pinguin Bokep, M.S.B';
 
   let videos = [];
   let editingId = null;
@@ -19,7 +18,6 @@
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
 
-  // ========== AUTH ==========
   function isLoggedIn() {
     return sessionStorage.getItem(AUTH_KEY) === '1';
   }
@@ -37,9 +35,7 @@
     location.reload();
   }
 
-  // ========== DATA ==========
   async function loadInitialData() {
-    // Prefer localStorage if present
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
@@ -51,7 +47,6 @@
       } catch (e) {}
     }
 
-    // Fallback to videos.json
     try {
       const res = await fetch('data/videos.json?t=' + Date.now());
       if (res.ok) {
@@ -73,8 +68,8 @@
       id: v.id ?? Date.now() + i,
       title: (v.title || `Video ${i + 1}`).trim(),
       thumbnail: (v.thumbnail || '').trim(),
-      embedUrl: (v.embedUrl || v.embed_url || '').trim(),
-      category: (v.category || 'Other').trim(),
+      embedUrl: (v.direct || v.embedUrl || v.embed || v.embed_url || '').trim(),
+      category: (v.category || 'Umum').trim(),
       date: v.date || new Date().toISOString().slice(0, 10)
     };
   }
@@ -98,7 +93,6 @@
     }
   }
 
-  // ========== UI ==========
   function showApp() {
     $('#loginScreen').classList.add('hidden');
     $('#adminApp').classList.remove('hidden');
@@ -157,7 +151,7 @@
         <div class="flex-1 min-w-0">
           <div class="font-medium truncate">${escapeHtml(v.title)}</div>
           <div class="text-xs text-zinc-500 mt-1 flex flex-wrap gap-2">
-            <span class="px-2 py-0.5 rounded-full bg-zinc-800">${escapeHtml(v.category || 'Other')}</span>
+            <span class="px-2 py-0.5 rounded-full bg-zinc-800">${escapeHtml(v.category || 'Umum')}</span>
             <span>${escapeHtml(v.date || '')}</span>
           </div>
           <div class="text-[11px] text-zinc-600 mt-1 truncate font-mono">${escapeHtml(v.embedUrl)}</div>
@@ -223,7 +217,6 @@
     }
   }
 
-  // ========== TABS ==========
   function switchTab(name) {
     $$('.admin-tab').forEach(t => {
       t.classList.remove('active', 'bg-rose-600', 'text-white');
@@ -244,12 +237,11 @@
     }
   }
 
-  // ========== BULK ==========
   function previewBulk() {
     const raw = $('#bulkInput').value.trim();
     const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     const prefix = $('#bulkTitlePrefix').value.trim() || 'Video';
-    const cat = $('#bulkCategory').value.trim() || 'Other';
+    const cat = $('#bulkCategory').value.trim() || 'Umum';
     const date = $('#bulkDate').value || new Date().toISOString().slice(0, 10);
 
     const existingUrls = new Set(videos.map(v => (v.embedUrl || '').toLowerCase()));
@@ -324,9 +316,15 @@
     }
   }
 
-  // ========== EXPORT / IMPORT ==========
   function exportJson() {
-    const blob = new Blob([JSON.stringify(videos, null, 2)], { type: 'application/json' });
+    // Export in user format: title, direct, source, category
+    const exportData = videos.map(v => ({
+      title: v.title,
+      direct: v.embedUrl,
+      source: 'Text Import',
+      category: v.category || 'Umum'
+    }));
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'videos.json';
@@ -362,9 +360,7 @@
     alert('Data di-reset.');
   }
 
-  // ========== EVENTS ==========
   function bindEvents() {
-    // Login
     $('#loginBtn').addEventListener('click', () => {
       const pw = $('#loginPassword').value;
       if (login(pw)) {
@@ -379,12 +375,10 @@
 
     $('#logoutBtn').addEventListener('click', logout);
 
-    // Tabs
     $$('.admin-tab').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    // Search & filter list
     $('#adminSearch').addEventListener('input', () => {
       renderList($('#adminSearch').value, $('#adminCatFilter').value);
     });
@@ -392,13 +386,12 @@
       renderList($('#adminSearch').value, $('#adminCatFilter').value);
     });
 
-    // Form
     $('#videoForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const title = $('#formTitleInput').value.trim();
       const embedUrl = $('#formEmbed').value.trim();
       const thumbnail = $('#formThumb').value.trim();
-      const category = $('#formCategory').value.trim() || 'Other';
+      const category = $('#formCategory').value.trim() || 'Umum';
       const date = $('#formDate').value || new Date().toISOString().slice(0, 10);
 
       if (!title || !embedUrl) {
@@ -410,7 +403,6 @@
         return;
       }
 
-      // Duplicate check
       const dup = videos.find(v => v.embedUrl.toLowerCase() === embedUrl.toLowerCase() && v.id !== editingId);
       if (dup) {
         if (!confirm('URL embed ini sudah ada. Tetap simpan?')) return;
@@ -433,7 +425,7 @@
       switchTab('list');
       renderList();
       populateCatFilter();
-      alert('Tersimpan di localStorage. Export JSON untuk membuat permanen.');
+      alert('Tersimpan. Export JSON untuk membuat permanen.');
     });
 
     $('#cancelEdit').addEventListener('click', () => {
@@ -443,11 +435,9 @@
 
     $('#formEmbed').addEventListener('input', updatePreview);
 
-    // Bulk
     $('#bulkPreviewBtn').addEventListener('click', previewBulk);
     $('#bulkImportBtn').addEventListener('click', doBulkImport);
 
-    // Export / Import
     $('#exportBtn').addEventListener('click', exportJson);
     $('#importFile').addEventListener('change', (e) => {
       if (e.target.files[0]) importFromFile(e.target.files[0]);
@@ -455,7 +445,6 @@
     $('#resetBtn').addEventListener('click', resetData);
   }
 
-  // ========== INIT ==========
   async function init() {
     bindEvents();
     $('#formDate').value = new Date().toISOString().slice(0, 10);
