@@ -53,7 +53,7 @@
         id: v.id || i + 1,
         title: v.title || 'Untitled',
         thumbnail: v.thumbnail || '',
-        embedUrl: v.embedUrl || v.embed || '',
+        embedUrl: v.embedUrl || v.embed || v.direct || '',
         category: v.category || 'Umum',
         date: v.date || ''
       })).filter(v => v.embedUrl);
