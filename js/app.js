@@ -1,6 +1,7 @@
 /**
  * Colmek Gallery - Main App
  * JSON format: { title, direct, source, category }
+ * Thumbnail: lazy iframe preview (like koleksi-dr-pinguin)
  */
 (function () {
   'use strict';
@@ -53,7 +54,7 @@
         id: v.id || i + 1,
         title: v.title || 'Untitled',
         thumbnail: v.thumbnail || '',
-        embedUrl: v.direct || v.embedUrl || v.embed || '',
+        embedUrl: v.direct || v.embed || v.embedUrl || '',
         category: v.category || 'Umum',
         date: v.date || ''
       })).filter(v => v.embedUrl);
@@ -75,10 +76,9 @@
 
     const slidesEl = $('#heroSlides');
     slidesEl.innerHTML = heroes.map((v, i) => {
-      const bg = v.thumbnail
-        ? `url('${v.thumbnail}')`
-        : `linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)`;
-      return `<div class="hero-slide absolute inset-0 transition-opacity duration-700 ${i === 0 ? 'opacity-100' : 'opacity-0'}" data-idx="${i}" style="background-image:${bg};background-size:cover;background-position:center;"></div>`;
+      return `<div class="hero-slide absolute inset-0 transition-opacity duration-700 ${i === 0 ? 'opacity-100' : 'opacity-0'}" data-idx="${i}">
+        <iframe src="${i === 0 ? escapeHtml(v.embedUrl) : ''}" data-src="${escapeHtml(v.embedUrl)}" class="w-full h-full pointer-events-none" frameborder="0" allowfullscreen></iframe>
+      </div>`;
     }).join('');
 
     updateHeroContent(heroes[0]);
@@ -88,7 +88,7 @@
     heroTimer = setInterval(() => {
       heroIndex = (heroIndex + 1) % heroes.length;
       showHeroSlide(heroes);
-    }, 6000);
+    }, 8000);
 
     $('#prevSlide').onclick = () => {
       heroIndex = (heroIndex - 1 + heroes.length) % heroes.length;
@@ -107,6 +107,10 @@
     $$('.hero-slide').forEach((el, i) => {
       el.classList.toggle('opacity-100', i === heroIndex);
       el.classList.toggle('opacity-0', i !== heroIndex);
+      const iframe = el.querySelector('iframe');
+      if (iframe && i === heroIndex && !iframe.src) {
+        iframe.src = iframe.dataset.src || '';
+      }
     });
     updateHeroContent(heroes[heroIndex]);
     currentHeroVideo = heroes[heroIndex];
@@ -200,6 +204,7 @@
 
     el.innerHTML = pageItems.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
+    lazyLoadIframes(el);
     $('#videoCount').textContent = `${filtered.length} video`;
   }
 
@@ -208,29 +213,55 @@
     const el = $('#trendingGrid');
     el.innerHTML = list.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
+    lazyLoadIframes(el);
   }
 
   function cardHTML(v) {
-    const thumb = v.thumbnail
-      ? `<img src="${escapeHtml(v.thumbnail)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center bg-surface-800\'><i class=\'fas fa-play text-2xl text-neutral-600\'></i></div>'">`
-      : `<div class="w-full h-full flex items-center justify-center bg-surface-800"><i class="fas fa-play text-2xl text-neutral-600"></i></div>`;
-
+    const src = v.embedUrl || '';
     return `
       <article class="video-card group cursor-pointer" data-id="${v.id}">
-        <div class="relative aspect-video rounded-xl overflow-hidden bg-surface-800 border border-neutral-800/80 group-hover:border-red-600/50 transition-colors">
-          ${thumb}
-          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+        <div class="relative aspect-video rounded-xl overflow-hidden bg-black border border-neutral-800/80 group-hover:border-red-600/50 transition-colors">
+          <iframe
+            data-src="${escapeHtml(src)}"
+            class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
+            loading="lazy"
+            allowfullscreen
+            frameborder="0"
+            allow="autoplay; encrypted-media; picture-in-picture"
+          ></iframe>
+          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
             <div class="w-12 h-12 rounded-full bg-red-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all shadow-lg">
               <i class="fas fa-play text-white text-sm ml-0.5"></i>
             </div>
           </div>
-          <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium tracking-wide">${escapeHtml(v.category)}</span>
+          <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium tracking-wide z-10">${escapeHtml(v.category)}</span>
         </div>
         <div class="mt-2.5 px-0.5">
           <h3 class="text-sm font-medium leading-snug line-clamp-2 group-hover:text-red-400 transition-colors">${escapeHtml(v.title)}</h3>
         </div>
       </article>
     `;
+  }
+
+  function lazyLoadIframes(container) {
+    const iframes = container.querySelectorAll('iframe[data-src]');
+    if (!('IntersectionObserver' in window)) {
+      iframes.forEach(f => { f.src = f.dataset.src; });
+      return;
+    }
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const f = entry.target;
+          if (f.dataset.src) {
+            f.src = f.dataset.src;
+            f.removeAttribute('data-src');
+          }
+          obs.unobserve(f);
+        }
+      });
+    }, { rootMargin: '200px' });
+    iframes.forEach(f => obs.observe(f));
   }
 
   function bindCardClicks(container) {
