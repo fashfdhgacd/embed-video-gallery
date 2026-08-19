@@ -91,33 +91,44 @@
     };
   }
 
-  // Auto-detect category dari judul / URL
+  // Auto-detect category dari judul / URL (lebih akurat)
   function detectCategory(title = '', url = '') {
     const t = (title + ' ' + url).toLowerCase();
+
+    // Urutan penting: yang lebih spesifik dulu
     const rules = [
-      { cat: 'Jilbab', keys: ['jilbab', 'hijab', 'ukhti', 'tudung', 'berhijab', 'syar'] },
-      { cat: 'STW', keys: ['tante', 'stw', 'janda', 'mertua', 'ibu mertua', 'bini', 'istri teman'] },
-      { cat: 'ABG', keys: ['abg', 'remaja', 'sma', 'smk', 'kuliah', 'mahasiswi', 'adik', 'adek'] },
-      { cat: 'Colmek', keys: ['colmek', 'masturb', 'onan', 'finger', 'dildo', 'vibrator'] },
-      { cat: 'Viral', keys: ['viral', 'trending', 'rame'] },
-      { cat: 'Live', keys: ['live', 'vcs', 'video call', 'streaming'] },
-      { cat: 'Bule', keys: ['bule', 'foreign', 'barat', 'western'] },
-      { cat: 'Chindo', keys: ['chindo', 'cindo', 'chinese'] },
-      { cat: 'Outdoor', keys: ['outdoor', 'hutan', 'kebun', 'pantai', 'taman', 'luar'] },
-      { cat: 'Toilet', keys: ['toilet', 'kamar mandi', 'wc', 'toilet'] },
-      { cat: 'Doggy', keys: ['doggy', 'dogystyle', 'dari belakang'] },
-      { cat: 'Threesome', keys: ['threesome', '3some', 'tiga orang', 'bareng'] },
-      { cat: 'AI', keys: [' ai ', 'ai-', 'a.i', 'deepfake'] },
-      { cat: 'Bumil', keys: ['bumil', 'hamil', 'pregnant'] },
+      { cat: 'AI', keys: [' ai ', 'ai-', 'a.i', 'deepfake', 'secrets ai', 'buatan secrets'] },
+      { cat: 'Jilbab', keys: ['jilbab', 'hijab', 'ukhti', 'ukhty', 'tudung', 'berhijab', 'syar', 'cadar', 'kerudung'] },
+      { cat: 'STW', keys: ['tante', 'stw', 'janda', 'mertua', 'ibu mertua', 'bini', 'istri teman', 'ibu kost', 'mama', 'bunda', 'istri orang', 'binor'] },
+      { cat: 'ABG', keys: ['abg', 'remaja', 'sma', 'smk', 'kuliah', 'mahasiswi', 'adik', 'adek', 'siswi', 'pelajar', 'anak sma', 'anak smk'] },
+      { cat: 'Colmek', keys: ['colmek', 'masturb', 'onan', 'finger', 'dildo', 'vibrator', 'ngocok memek', 'mainin memek', 'omek'] },
+      { cat: 'Viral', keys: ['viral', 'trending', 'rame', 'yang lagi viral'] },
+      { cat: 'Live', keys: ['live', 'vcs', 'video call', 'streaming', 'hot51', 'hot 51', 'bigo'] },
+      { cat: 'Bule', keys: ['bule', 'foreign', 'barat', 'western', 'bbc', 'black'] },
+      { cat: 'Chindo', keys: ['chindo', 'cindo', 'chinese', 'amoy', 'cina'] },
+      { cat: 'Outdoor', keys: ['outdoor', 'hutan', 'kebun', 'pantai', 'taman', 'ladang', 'sawah', 'pinggir jalan'] },
+      { cat: 'Toilet', keys: ['toilet', 'kamar mandi', 'wc', 'mandi'] },
+      { cat: 'Doggy', keys: ['doggy', 'dogystyle', 'dari belakang', 'nungging'] },
+      { cat: 'Threesome', keys: ['threesome', '3some', 'tiga orang', 'bergilir', 'digilir', 'gangbang', 'bareng temen'] },
+      { cat: 'Bumil', keys: ['bumil', 'hamil', 'pregnant', 'hamil muda'] },
       { cat: 'Lesbian', keys: ['lesbian', 'cewek sama cewek', 'girl on girl'] },
-      { cat: 'Open BO', keys: ['open bo', 'openbo', 'bo '] },
-      { cat: 'Perselingkuhan', keys: ['selingkuh', 'perselingkuhan', 'pacar teman'] },
-      { cat: 'Tobrut', keys: ['tobrut', 'toket', 'payudara besar', 'susu gede'] },
-      { cat: 'Amatir', keys: ['amatir', 'homemade', 'real', 'asli'] }
+      { cat: 'Open BO', keys: ['open bo', 'openbo', 'bo ', 'michat'] },
+      { cat: 'Perselingkuhan', keys: ['selingkuh', 'perselingkuhan', 'pacar teman', 'istri selingkuh', 'suami selingkuh'] },
+      { cat: 'Tobrut', keys: ['tobrut', 'toket', 'payudara besar', 'susu gede', 'toge', 'montok', 'nenen'] },
+      { cat: 'Guru', keys: ['guru', 'dosen', 'pengajar'] },
+      { cat: 'Artis', keys: ['artis', 'selebgram', 'tiktoker', 'influencer'] },
+      { cat: 'Amatir', keys: ['amatir', 'homemade', 'real', 'asli', 'rumahan', 'koleksi dr. pinguin', 'koleksi dr. harimau', 'koleksi dr. anjing'] }
     ];
+
     for (const r of rules) {
       if (r.keys.some(k => t.includes(k))) return r.cat;
     }
+
+    // Fallback cerdas dari pola umum
+    if (/ngentot|ngewe|ngentod|mesum|bercinta|seks|sex/.test(t)) return 'Amatir';
+    if (/sepong|blowjob|nyepong|ngemut/.test(t)) return 'Amatir';
+    if (/hotel|kosan|kontrakan|villa/.test(t)) return 'Amatir';
+
     return 'Umum';
   }
 
@@ -125,20 +136,25 @@
     const t = title.toLowerCase();
     const tags = [];
     const map = {
-      mesum: ['mesum', 'ngentot', 'ngewe', 'seks'],
-      jilbab: ['jilbab', 'hijab', 'ukhti'],
-      tante: ['tante', 'stw', 'janda'],
-      abg: ['abg', 'remaja', 'sma'],
-      colmek: ['colmek', 'masturb'],
-      viral: ['viral'],
-      live: ['live', 'vcs'],
-      bule: ['bule'],
-      outdoor: ['outdoor', 'hutan'],
-      toilet: ['toilet', 'kamar mandi'],
-      doggy: ['doggy'],
-      ai: ['ai'],
-      tobrut: ['tobrut', 'toket'],
-      hotel: ['hotel', 'kosan']
+      mesum: ['mesum', 'ngentot', 'ngewe', 'ngentod', 'seks', 'sex', 'bercinta'],
+      jilbab: ['jilbab', 'hijab', 'ukhti', 'ukhty', 'tudung', 'cadar'],
+      tante: ['tante', 'stw', 'janda', 'binor', 'ibu kost', 'mama'],
+      abg: ['abg', 'remaja', 'sma', 'smk', 'mahasiswi', 'siswi', 'pelajar'],
+      colmek: ['colmek', 'masturb', 'onan', 'dildo', 'omek', 'ngocok'],
+      viral: ['viral', 'trending'],
+      live: ['live', 'vcs', 'hot51', 'bigo'],
+      bule: ['bule', 'bbc', 'black'],
+      chindo: ['chindo', 'cindo', 'amoy', 'cina'],
+      outdoor: ['outdoor', 'hutan', 'kebun', 'ladang', 'pantai'],
+      toilet: ['toilet', 'kamar mandi', 'wc'],
+      doggy: ['doggy', 'nungging', 'dari belakang'],
+      threesome: ['threesome', 'bergilir', 'digilir', 'gangbang'],
+      ai: ['ai', 'deepfake'],
+      tobrut: ['tobrut', 'toket', 'toge', 'montok', 'nenen', 'susu'],
+      hotel: ['hotel', 'kosan', 'kontrakan', 'villa'],
+      sepong: ['sepong', 'blowjob', 'nyepong', 'ngemut'],
+      bumil: ['bumil', 'hamil'],
+      kompilasi: ['kompilasi', 'compilation']
     };
     for (const [tag, keys] of Object.entries(map)) {
       if (keys.some(k => t.includes(k))) tags.push(tag);
