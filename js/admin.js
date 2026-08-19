@@ -64,14 +64,76 @@
   }
 
   function normalizeVideo(v, i = 0) {
+    const title = (v.title || `Video ${i + 1}`).trim();
+    const embedUrl = (v.direct || v.embedUrl || v.embed || v.embed_url || '').trim();
+    let category = (v.category || '').trim();
+    if (!category || category === 'Umum') {
+      category = detectCategory(title, embedUrl);
+    }
     return {
       id: v.id ?? Date.now() + i,
-      title: (v.title || `Video ${i + 1}`).trim(),
+      title,
       thumbnail: (v.thumbnail || '').trim(),
-      embedUrl: (v.direct || v.embedUrl || v.embed || v.embed_url || '').trim(),
-      category: (v.category || 'Umum').trim(),
-      date: v.date || new Date().toISOString().slice(0, 10)
+      embedUrl,
+      category,
+      date: v.date || new Date().toISOString().slice(0, 10),
+      tags: v.tags || detectTags(title)
     };
+  }
+
+  // Auto-detect category dari judul / URL
+  function detectCategory(title = '', url = '') {
+    const t = (title + ' ' + url).toLowerCase();
+    const rules = [
+      { cat: 'Jilbab', keys: ['jilbab', 'hijab', 'ukhti', 'tudung', 'berhijab', 'syar'] },
+      { cat: 'STW', keys: ['tante', 'stw', 'janda', 'mertua', 'ibu mertua', 'bini', 'istri teman'] },
+      { cat: 'ABG', keys: ['abg', 'remaja', 'sma', 'smk', 'kuliah', 'mahasiswi', 'adik', 'adek'] },
+      { cat: 'Colmek', keys: ['colmek', 'masturb', 'onan', 'finger', 'dildo', 'vibrator'] },
+      { cat: 'Viral', keys: ['viral', 'trending', 'rame'] },
+      { cat: 'Live', keys: ['live', 'vcs', 'video call', 'streaming'] },
+      { cat: 'Bule', keys: ['bule', 'foreign', 'barat', 'western'] },
+      { cat: 'Chindo', keys: ['chindo', 'cindo', 'chinese'] },
+      { cat: 'Outdoor', keys: ['outdoor', 'hutan', 'kebun', 'pantai', 'taman', 'luar'] },
+      { cat: 'Toilet', keys: ['toilet', 'kamar mandi', 'wc', 'toilet'] },
+      { cat: 'Doggy', keys: ['doggy', 'dogystyle', 'dari belakang'] },
+      { cat: 'Threesome', keys: ['threesome', '3some', 'tiga orang', 'bareng'] },
+      { cat: 'AI', keys: [' ai ', 'ai-', 'a.i', 'deepfake'] },
+      { cat: 'Bumil', keys: ['bumil', 'hamil', 'pregnant'] },
+      { cat: 'Lesbian', keys: ['lesbian', 'cewek sama cewek', 'girl on girl'] },
+      { cat: 'Open BO', keys: ['open bo', 'openbo', 'bo '] },
+      { cat: 'Perselingkuhan', keys: ['selingkuh', 'perselingkuhan', 'pacar teman'] },
+      { cat: 'Tobrut', keys: ['tobrut', 'toket', 'payudara besar', 'susu gede'] },
+      { cat: 'Amatir', keys: ['amatir', 'homemade', 'real', 'asli'] }
+    ];
+    for (const r of rules) {
+      if (r.keys.some(k => t.includes(k))) return r.cat;
+    }
+    return 'Umum';
+  }
+
+  function detectTags(title = '') {
+    const t = title.toLowerCase();
+    const tags = [];
+    const map = {
+      mesum: ['mesum', 'ngentot', 'ngewe', 'seks'],
+      jilbab: ['jilbab', 'hijab', 'ukhti'],
+      tante: ['tante', 'stw', 'janda'],
+      abg: ['abg', 'remaja', 'sma'],
+      colmek: ['colmek', 'masturb'],
+      viral: ['viral'],
+      live: ['live', 'vcs'],
+      bule: ['bule'],
+      outdoor: ['outdoor', 'hutan'],
+      toilet: ['toilet', 'kamar mandi'],
+      doggy: ['doggy'],
+      ai: ['ai'],
+      tobrut: ['tobrut', 'toket'],
+      hotel: ['hotel', 'kosan']
+    };
+    for (const [tag, keys] of Object.entries(map)) {
+      if (keys.some(k => t.includes(k))) tags.push(tag);
+    }
+    return [...new Set(tags)];
   }
 
   function saveToStorage() {
@@ -250,17 +312,38 @@
     const listEl = $('#bulkPreviewList');
     listEl.innerHTML = '';
 
+    // Support 2 format:
+    // 1. URL saja (satu per baris)
+    // 2. Judul + URL bergantian (judul\nurl\njudul\nurl...)
+    const pairs = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (isValidUrl(line)) {
+        // URL → title sebelumnya (kalau bukan URL) atau auto
+        const prev = i > 0 && !isValidUrl(lines[i - 1]) ? lines[i - 1] : null;
+        pairs.push({ title: prev || null, url: line });
+      } else if (i + 1 < lines.length && isValidUrl(lines[i + 1])) {
+        // Judul diikuti URL di baris berikutnya
+        pairs.push({ title: line, url: lines[i + 1] });
+        i++; // skip URL yang sudah diambil
+      }
+    }
+
     let validCount = 0;
-    lines.forEach((line, idx) => {
-      const isValid = isValidUrl(line);
-      const isDup = existingUrls.has(line.toLowerCase());
-      const status = !isValid ? 'invalid' : (isDup ? 'dup' : 'ok');
+    pairs.forEach((pair, idx) => {
+      const url = pair.url;
+      const isDup = existingUrls.has(url.toLowerCase());
+      const status = isDup ? 'dup' : 'ok';
       if (status === 'ok') validCount++;
 
+      const autoTitle = pair.title || `${prefix} ${videos.length + validCount}`;
+      const detected = detectCategory(autoTitle + ' ' + url, url);
+      const finalCat = (cat && cat !== 'Umum') ? cat : detected;
+
       bulkCandidates.push({
-        title: `${prefix} ${videos.length + bulkCandidates.filter(c => c.status === 'ok').length + 1}`,
-        embedUrl: line,
-        category: cat,
+        title: autoTitle,
+        embedUrl: url,
+        category: finalCat,
         date,
         status
       });
@@ -273,8 +356,12 @@
         <div class="flex items-start gap-3 p-2 rounded-lg bg-surface-900 border border-zinc-800">
           <input type="checkbox" class="bulk-check mt-1" data-idx="${idx}" ${status === 'ok' ? 'checked' : ''} ${status !== 'ok' ? 'disabled' : ''}>
           <div class="flex-1 min-w-0">
-            <div class="font-mono text-xs truncate">${escapeHtml(line)}</div>
-            <div class="text-[11px] mt-0.5">${badge}</div>
+            <div class="text-xs font-medium truncate">${escapeHtml(autoTitle)}</div>
+            <div class="font-mono text-[11px] text-neutral-500 truncate">${escapeHtml(url)}</div>
+            <div class="text-[11px] mt-0.5 flex gap-2 flex-wrap">
+              ${badge}
+              <span class="text-red-400/80">${escapeHtml(finalCat)}</span>
+            </div>
           </div>
         </div>
       `;
@@ -288,26 +375,30 @@
     const checks = $$('.bulk-check:checked');
     if (checks.length === 0) return;
 
-    let added = 0;
+    const toAdd = [];
     checks.forEach(chk => {
       const idx = parseInt(chk.dataset.idx, 10);
       const item = bulkCandidates[idx];
       if (item && item.status === 'ok') {
-        videos.push(normalizeVideo({
-          id: getNextId() + added,
+        // Auto-detect category & tags from title if still default
+        const detectedCat = detectCategory(item.title, item.embedUrl);
+        const finalCat = (!item.category || item.category === 'Umum') ? detectedCat : item.category;
+        toAdd.push(normalizeVideo({
+          id: getNextId() + toAdd.length,
           title: item.title,
           embedUrl: item.embedUrl,
-          category: item.category,
-          date: item.date,
+          category: finalCat,
+          date: item.date || new Date().toISOString().slice(0, 10),
           thumbnail: ''
         }));
-        added++;
       }
     });
 
-    if (added > 0) {
+    if (toAdd.length > 0) {
+      // Newest first: unshift so new videos appear at the front
+      videos.unshift(...toAdd.reverse()); // reverse supaya urutan paste tetap dari atas ke bawah
       saveToStorage();
-      alert(`Berhasil import ${added} video. Jangan lupa Export JSON & commit ke repo!`);
+      alert(`Berhasil import ${toAdd.length} video (ditaruh di depan). Jangan lupa Export JSON & commit ke repo!`);
       $('#bulkInput').value = '';
       $('#bulkPreview').classList.add('hidden');
       switchTab('list');
@@ -317,12 +408,15 @@
   }
 
   function exportJson() {
-    // Export in user format: title, direct, source, category
+    // Export format yang kompatibel + tags
     const exportData = videos.map(v => ({
       title: v.title,
       direct: v.embedUrl,
+      embed: v.embedUrl,
       source: 'Text Import',
-      category: v.category || 'Umum'
+      category: v.category || 'Umum',
+      tags: v.tags || [],
+      date: v.date || ''
     }));
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -408,15 +502,19 @@
         if (!confirm('URL embed ini sudah ada. Tetap simpan?')) return;
       }
 
+      // Auto-detect if user left category as default / empty
+      const finalCat = (!category || category === 'Umum') ? detectCategory(title, embedUrl) : category;
+
       if (editingId) {
         const idx = videos.findIndex(v => v.id === editingId);
         if (idx !== -1) {
-          videos[idx] = { ...videos[idx], title, embedUrl, thumbnail, category, date };
+          videos[idx] = { ...videos[idx], title, embedUrl, thumbnail, category: finalCat, date, tags: detectTags(title) };
         }
       } else {
-        videos.push(normalizeVideo({
+        // Newest first → unshift
+        videos.unshift(normalizeVideo({
           id: getNextId(),
-          title, embedUrl, thumbnail, category, date
+          title, embedUrl, thumbnail, category: finalCat, date
         }));
       }
 
