@@ -470,15 +470,18 @@
     status.className = 'text-sm text-amber-400 mt-3';
     status.textContent = 'Mengambil file saat ini dari GitHub...';
 
-    const exportData = videos.map(v => ({
-      title: v.title,
-      direct: v.embedUrl,
-      embed: v.embedUrl,
-      source: 'Text Import',
-      category: v.category || 'Umum',
-      tags: v.tags || [],
-      date: v.date || ''
-    }));
+    const exportData = videos.map(v => {
+      const item = {
+        title: v.title,
+        direct: v.embedUrl,
+        embed: v.embedUrl,
+        source: 'Text Import',
+        category: v.category || 'Umum',
+        tags: Array.isArray(v.tags) ? v.tags : []
+      };
+      if (v.date && String(v.date).trim()) item.date = v.date;
+      return item;
+    });
 
     const content = JSON.stringify(exportData, null, 2);
     const contentBase64 = btoa(unescape(encodeURIComponent(content)));
@@ -541,16 +544,20 @@
   }
 
   function exportJson() {
-    // Export format yang kompatibel + tags
-    const exportData = videos.map(v => ({
-      title: v.title,
-      direct: v.embedUrl,
-      embed: v.embedUrl,
-      source: 'Text Import',
-      category: v.category || 'Umum',
-      tags: v.tags || [],
-      date: v.date || ''
-    }));
+    // Format sama seperti videos_fixed: title, direct, embed, source, category, tags
+    // date hanya dimasukkan kalau ada isinya
+    const exportData = videos.map(v => {
+      const item = {
+        title: v.title,
+        direct: v.embedUrl,
+        embed: v.embedUrl,
+        source: 'Text Import',
+        category: v.category || 'Umum',
+        tags: Array.isArray(v.tags) ? v.tags : []
+      };
+      if (v.date && String(v.date).trim()) item.date = v.date;
+      return item;
+    });
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
