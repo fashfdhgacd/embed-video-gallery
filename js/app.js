@@ -56,8 +56,20 @@
         thumbnail: v.thumbnail || '',
         embedUrl: v.direct || v.embed || v.embedUrl || '',
         category: v.category || 'Umum',
-        date: v.date || ''
+        date: v.date || '',
+        // keep original index as fallback for stable newest-first when date missing
+        _idx: i
       })).filter(v => v.embedUrl);
+
+      // Newest first: prefer date (YYYY-MM-DD), fallback to original array order (last added = newest)
+      allVideos.sort((a, b) => {
+        const da = a.date || '';
+        const db = b.date || '';
+        if (da && db && da !== db) return db.localeCompare(da); // newer date first
+        if (da && !db) return -1;
+        if (!da && db) return 1;
+        return (b._idx || 0) - (a._idx || 0); // later in original file = newer
+      });
     } catch (e) {
       console.error('Load videos error:', e);
       allVideos = [];
@@ -209,8 +221,11 @@
   }
 
   function renderTrending() {
+    // "Trending" = newest videos (karena static site belum punya view tracking real)
+    // Nanti bisa diganti pakai field views kalau sudah ada backend/analytics
     const list = allVideos.slice(0, 10);
     const el = $('#trendingGrid');
+    if (!el) return;
     el.innerHTML = list.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
     lazyLoadIframes(el);
