@@ -8,8 +8,18 @@
 
   const STORAGE_KEY = 'embed_gallery_videos_v1';
   const AUTH_KEY = 'embed_gallery_auth';
+  const GH_CONFIG_KEY = 'embed_gallery_gh_config';
   // Admin password
   const DEMO_PASSWORD = 'Koleksi Dr. Pinguin Bokep, M.S.B';
+
+  // Default GitHub config (bisa diubah di UI)
+  const DEFAULT_GH = {
+    owner: 'fashfdhgacd',
+    repo: 'koleksidrpinguin_site',
+    path: 'data/videos.json',
+    branch: 'main',
+    token: ''
+  };
 
   let videos = [];
   let editingId = null;
@@ -407,6 +417,129 @@
     }
   }
 
+
+  function getGhConfig() {
+    try {
+      const raw = localStorage.getItem(GH_CONFIG_KEY);
+      if (raw) return { ...DEFAULT_GH, ...JSON.parse(raw) };
+    } catch (e) {}
+    return { ...DEFAULT_GH };
+  }
+
+  function saveGhConfig(cfg) {
+    localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(cfg));
+  }
+
+  function loadGhForm() {
+    const cfg = getGhConfig();
+    if ($('#ghToken')) $('#ghToken').value = cfg.token || '';
+    if ($('#ghOwner')) $('#ghOwner').value = cfg.owner || DEFAULT_GH.owner;
+    if ($('#ghRepo')) $('#ghRepo').value = cfg.repo || DEFAULT_GH.repo;
+    if ($('#ghPath')) $('#ghPath').value = cfg.path || DEFAULT_GH.path;
+    if ($('#ghBranch')) $('#ghBranch').value = cfg.branch || DEFAULT_GH.branch;
+  }
+
+  function collectGhForm() {
+    return {
+      token: ($('#ghToken')?.value || '').trim(),
+      owner: ($('#ghOwner')?.value || DEFAULT_GH.owner).trim(),
+      repo: ($('#ghRepo')?.value || DEFAULT_GH.repo).trim(),
+      path: ($('#ghPath')?.value || DEFAULT_GH.path).trim(),
+      branch: ($('#ghBranch')?.value || DEFAULT_GH.branch).trim()
+    };
+  }
+
+  async function pushToGitHub() {
+    const cfg = collectGhForm();
+    if (!cfg.token) {
+      alert('Token GitHub masih kosong. Isi dulu di form bawah.');
+      return;
+    }
+    if (!cfg.owner || !cfg.repo || !cfg.path) {
+      alert('Owner / Repo / Path harus diisi.');
+      return;
+    }
+
+    saveGhConfig(cfg);
+
+    const btn = $('#ghPushBtn');
+    const status = $('#ghStatus');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
+    status.className = 'text-sm text-amber-400 mt-3';
+    status.textContent = 'Mengambil file saat ini dari GitHub...';
+
+    const exportData = videos.map(v => ({
+      title: v.title,
+      direct: v.embedUrl,
+      embed: v.embedUrl,
+      source: 'Text Import',
+      category: v.category || 'Umum',
+      tags: v.tags || [],
+      date: v.date || ''
+    }));
+
+    const content = JSON.stringify(exportData, null, 2);
+    const contentBase64 = btoa(unescape(encodeURIComponent(content)));
+
+    const apiBase = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+    const headers = {
+      'Authorization': `token ${cfg.token}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    };
+
+    try {
+      // 1. Get current SHA
+      let sha = null;
+      const getRes = await fetch(`${apiBase}?ref=${cfg.branch}`, { headers });
+      if (getRes.status === 200) {
+        const fileData = await getRes.json();
+        sha = fileData.sha;
+      } else if (getRes.status !== 404) {
+        const err = await getRes.json().catch(() => ({}));
+        throw new Error(err.message || `Gagal baca file (${getRes.status})`);
+      }
+
+      status.textContent = 'Mengupload videos.json...';
+
+      // 2. PUT update
+      const body = {
+        message: `Admin: update videos.json (${exportData.length} videos) - ${new Date().toLocaleString('id-ID')}`,
+        content: contentBase64,
+        branch: cfg.branch
+      };
+      if (sha) body.sha = sha;
+
+      const putRes = await fetch(apiBase, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(body)
+      });
+
+      if (!putRes.ok) {
+        const err = await putRes.json().catch(() => ({}));
+        throw new Error(err.message || `Gagal push (${putRes.status})`);
+      }
+
+      const result = await putRes.json();
+      status.className = 'text-sm text-emerald-400 mt-3';
+      status.innerHTML = `✅ Berhasil disimpan ke GitHub!<br><span class="text-xs text-zinc-500">Commit: ${result.commit?.sha?.slice(0,7) || '-'} · Vercel akan redeploy otomatis dalam 1-2 menit.</span>`;
+      btn.innerHTML = '<i class="fas fa-check mr-2"></i> Tersimpan!';
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }, 3000);
+    } catch (err) {
+      console.error(err);
+      status.className = 'text-sm text-rose-400 mt-3';
+      status.textContent = '❌ Gagal: ' + (err.message || err);
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+
   function exportJson() {
     // Export format yang kompatibel + tags
     const exportData = videos.map(v => ({
@@ -541,12 +674,25 @@
       if (e.target.files[0]) importFromFile(e.target.files[0]);
     });
     $('#resetBtn').addEventListener('click', resetData);
+
+    // GitHub auto-save
+    if ($('#ghPushBtn')) {
+      $('#ghPushBtn').addEventListener('click', pushToGitHub);
+    }
+    if ($('#ghSaveConfig')) {
+      $('#ghSaveConfig').addEventListener('click', () => {
+        const cfg = collectGhForm();
+        saveGhConfig(cfg);
+        alert('Config GitHub disimpan di browser ini.');
+      });
+    }
   }
 
   async function init() {
     bindEvents();
     $('#formDate').value = new Date().toISOString().slice(0, 10);
     $('#bulkDate').value = new Date().toISOString().slice(0, 10);
+    loadGhForm();
 
     if (isLoggedIn()) {
       await loadInitialData();
