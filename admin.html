@@ -87,7 +87,7 @@
         </div>
         <div class="bg-surface-800 border border-zinc-800 rounded-2xl p-4">
           <div class="text-zinc-500 text-xs uppercase tracking-wider">Mode</div>
-          <div class="text-sm font-medium mt-2 text-amber-400">Local / Export</div>
+          <div class="text-sm font-medium mt-2 text-emerald-400">GitHub Auto-Save</div>
         </div>
         <div class="bg-surface-800 border border-zinc-800 rounded-2xl p-4">
           <div class="text-zinc-500 text-xs uppercase tracking-wider">Status</div>
@@ -211,10 +211,63 @@
       <!-- TAB: Export / Import -->
       <div id="tab-export" class="tab-content hidden">
         <div class="bg-surface-800 border border-zinc-800 rounded-2xl p-6 max-w-xl space-y-6">
-          <div>
-            <h2 class="text-lg font-semibold mb-2">Export videos.json</h2>
-            <p class="text-sm text-zinc-400 mb-4">Download file JSON (format: title, direct, source, category).</p>
-            <button id="exportBtn" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition">
+
+          <!-- AUTO SAVE TO GITHUB -->
+          <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+            <h2 class="text-lg font-semibold mb-1 text-emerald-400">
+              <i class="fab fa-github mr-2"></i>Simpan ke GitHub (Otomatis)
+            </h2>
+            <p class="text-sm text-zinc-400 mb-4">
+              Push langsung ke <code class="text-zinc-300">data/videos.json</code>. Vercel akan redeploy otomatis.
+            </p>
+
+            <div class="space-y-3 mb-4">
+              <div>
+                <label class="block text-xs text-zinc-500 mb-1">GitHub Token (PAT)</label>
+                <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx"
+                       class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-zinc-500 mb-1">Owner</label>
+                  <input type="text" id="ghOwner" value="fashfdhgacd"
+                         class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                  <label class="block text-xs text-zinc-500 mb-1">Repo</label>
+                  <input type="text" id="ghRepo" value="koleksidrpinguin_site"
+                         class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-zinc-500 mb-1">Path file</label>
+                  <input type="text" id="ghPath" value="data/videos.json"
+                         class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                  <label class="block text-xs text-zinc-500 mb-1">Branch</label>
+                  <input type="text" id="ghBranch" value="main"
+                         class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <button id="ghPushBtn" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition">
+                <i class="fas fa-cloud-upload-alt mr-2"></i> Simpan ke GitHub
+              </button>
+              <button id="ghSaveConfig" class="px-4 py-2.5 rounded-xl bg-zinc-800 border border-zinc-600 text-sm hover:border-emerald-500/50 transition">
+                Simpan Config
+              </button>
+            </div>
+            <div id="ghStatus" class="text-sm mt-3"></div>
+          </div>
+
+          <div class="border-t border-zinc-700 pt-6">
+            <h2 class="text-lg font-semibold mb-2">Export Manual</h2>
+            <p class="text-sm text-zinc-400 mb-4">Download file JSON (backup).</p>
+            <button id="exportBtn" class="px-5 py-2.5 rounded-xl bg-zinc-700 hover:bg-zinc-600 text-white font-medium transition">
               <i class="fas fa-download mr-2"></i> Download videos.json
             </button>
           </div>
