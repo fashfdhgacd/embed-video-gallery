@@ -62,20 +62,48 @@
         _idx: i
       })).filter(v => v.embedUrl);
 
-      allVideos.sort((a, b) => {
-        const da = a.date || '';
-        const db = b.date || '';
-        if (da && db && da !== db) return db.localeCompare(da);
-        if (da && !db) return -1;
-        if (!da && db) return 1;
-        return (b._idx || 0) - (a._idx || 0);
-      });
+      // Urutan beda per pengunjung/sesi
+      allVideos = shuffleVideos(allVideos);
     } catch (e) {
       console.error('Load videos error:', e);
       allVideos = [];
     }
     filtered = [...allVideos];
     renderAll();
+  }
+
+  function shuffleVideos(list) {
+    const arr = list.slice();
+    let seed;
+    try {
+      const key = 'kdp_site_shuffle_seed';
+      seed = sessionStorage.getItem(key);
+      if (!seed) {
+        seed = String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+        sessionStorage.setItem(key, seed);
+      }
+    } catch (_) {
+      seed = String(Date.now());
+    }
+    let h = 2166136261;
+    for (let i = 0; i < seed.length; i++) {
+      h ^= seed.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    const rand = () => {
+      h += 0x6D2B79F5;
+      let t = h;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      const tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+    return arr;
   }
 
   function getHeroVideos() {
