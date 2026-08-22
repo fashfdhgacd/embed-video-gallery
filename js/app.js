@@ -167,7 +167,13 @@
   function isHiddenHome(v) {
     const cat = (v.category || '').toLowerCase();
     const url = (v.embedUrl || v.direct || v.embed || '').toLowerCase();
-    return cat === 'vicek' || cat === 'vicek.id' || url.includes('vicek.id');
+    return cat === 'vicek' || cat === 'vicek.id' || cat.includes('exastream')
+      || url.includes('vicek.id') || url.includes('exastream');
+  }
+
+  function isExaStreamCat(name) {
+    const c = (name || '').toLowerCase();
+    return c === 'vicek' || c === 'vicek.id' || c.includes('exastream');
   }
 
   function mainPool() {
@@ -192,9 +198,14 @@
       counts[c] = (counts[c] || 0) + 1;
     });
     const cats = Object.entries(counts)
+      .filter(([name]) => name !== 'Vicek' && name !== 'Vicek.id' && !String(name).toLowerCase().includes('exastream'))
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
     const newCount = allVideos.filter(isNewUpload).length;
+    const exaCount = allVideos.filter(isHiddenHome).length;
+    if (exaCount > 0) {
+      cats.unshift({ name: "Collection Dr. Pinguin Porn, M.S.B. ExaStream", count: exaCount });
+    }
     if (newCount > 0) {
       cats.unshift({ name: 'Upload Terbaru', count: newCount });
     }
@@ -322,7 +333,7 @@
         if (da !== db) return db.localeCompare(da);
         return (b._idx || 0) - (a._idx || 0);
       });
-    } else if (currentCategory.toLowerCase() === 'vicek' || currentCategory.toLowerCase() === 'vicek.id') {
+    } else if (isExaStreamCat(currentCategory)) {
       filtered = allVideos.filter(isHiddenHome);
     } else {
       filtered = mainPool().filter(v => (v.category || '').toLowerCase() === currentCategory.toLowerCase());
