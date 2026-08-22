@@ -59,6 +59,7 @@
         embedUrl: v.direct || v.embed || v.embedUrl || '',
         category: v.category || 'Umum',
         date: v.date || '',
+        tags: Array.isArray(v.tags) ? v.tags : [],
         _idx: i
       })).filter(v => v.embedUrl);
 
@@ -161,15 +162,32 @@
     $('#heroMeta').textContent = `${v.category}`.trim();
   }
 
+  
+  function isNewUpload(v) {
+    const tags = Array.isArray(v.tags) ? v.tags.map(t => String(t).toLowerCase()) : [];
+    if (tags.includes('baru') || tags.includes('upload-terbaru') || tags.includes('upload terbaru')) return true;
+    const d = (v.date || '').slice(0, 10);
+    if (!d) return false;
+    const ts = Date.parse(d);
+    if (Number.isNaN(ts)) return false;
+    const days = (Date.now() - ts) / 86400000;
+    return days >= 0 && days <= 14;
+  }
+
   function getCategories() {
     const counts = {};
     allVideos.forEach(v => {
       const c = v.category || 'Umum';
       counts[c] = (counts[c] || 0) + 1;
     });
-    return Object.entries(counts)
+    const cats = Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
+    const newCount = allVideos.filter(isNewUpload).length;
+    if (newCount > 0) {
+      cats.unshift({ name: 'Upload Terbaru', count: newCount });
+    }
+    return cats;
   }
 
   function renderCategoryPills() {
@@ -286,6 +304,13 @@
   function applyFilter() {
     if (currentCategory === 'All') {
       filtered = [...allVideos];
+    } else if (currentCategory.toLowerCase() === 'upload terbaru') {
+      filtered = allVideos.filter(isNewUpload).sort((a, b) => {
+        const da = a.date || '';
+        const db = b.date || '';
+        if (da !== db) return db.localeCompare(da);
+        return (b._idx || 0) - (a._idx || 0);
+      });
     } else {
       filtered = allVideos.filter(v => (v.category || '').toLowerCase() === currentCategory.toLowerCase());
     }
