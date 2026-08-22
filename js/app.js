@@ -108,7 +108,7 @@
   }
 
   function getHeroVideos() {
-    return allVideos.slice(0, HERO_COUNT);
+    return mainPool().slice(0, HERO_COUNT);
   }
 
   function renderHero() {
@@ -163,6 +163,17 @@
   }
 
   
+  
+  function isHiddenHome(v) {
+    const cat = (v.category || '').toLowerCase();
+    const url = (v.embedUrl || v.direct || v.embed || '').toLowerCase();
+    return cat === 'vicek' || cat === 'vicek.id' || url.includes('vicek.id');
+  }
+
+  function mainPool() {
+    return allVideos.filter(v => !isHiddenHome(v));
+  }
+
   function isNewUpload(v) {
     const tags = Array.isArray(v.tags) ? v.tags.map(t => String(t).toLowerCase()) : [];
     if (tags.includes('baru') || tags.includes('upload-terbaru') || tags.includes('upload terbaru')) return true;
@@ -195,7 +206,7 @@
     const el = $('#categoryPills');
     const show = cats.slice(0, 24);
     el.innerHTML = `
-      <button class="cat-pill active" data-cat="All">Semua <span class="opacity-60">${allVideos.length}</span></button>
+      <button class="cat-pill active" data-cat="All">Semua <span class="opacity-60">${mainPool().length}</span></button>
       ${show.map(c => `
         <button class="cat-pill" data-cat="${escapeHtml(c.name)}">${escapeHtml(c.name)} <span class="opacity-60">${c.count}</span></button>
       `).join('')}
@@ -303,16 +314,18 @@
 
   function applyFilter() {
     if (currentCategory === 'All') {
-      filtered = [...allVideos];
+      filtered = mainPool();
     } else if (currentCategory.toLowerCase() === 'upload terbaru') {
-      filtered = allVideos.filter(isNewUpload).sort((a, b) => {
+      filtered = mainPool().filter(isNewUpload).sort((a, b) => {
         const da = a.date || '';
         const db = b.date || '';
         if (da !== db) return db.localeCompare(da);
         return (b._idx || 0) - (a._idx || 0);
       });
+    } else if (currentCategory.toLowerCase() === 'vicek' || currentCategory.toLowerCase() === 'vicek.id') {
+      filtered = allVideos.filter(isHiddenHome);
     } else {
-      filtered = allVideos.filter(v => (v.category || '').toLowerCase() === currentCategory.toLowerCase());
+      filtered = mainPool().filter(v => (v.category || '').toLowerCase() === currentCategory.toLowerCase());
     }
     renderGrid();
     renderPagination();
@@ -335,7 +348,7 @@
   }
 
   function renderTrending() {
-    const list = allVideos.slice(0, 10);
+    const list = mainPool().slice(0, 10);
     const el = $('#trendingGrid');
     if (!el) return;
     el.innerHTML = list.map(v => cardHTML(v)).join('');
