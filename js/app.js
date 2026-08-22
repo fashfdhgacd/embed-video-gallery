@@ -204,7 +204,7 @@
     const newCount = allVideos.filter(isNewUpload).length;
     const exaCount = allVideos.filter(isHiddenHome).length;
     if (exaCount > 0) {
-      cats.unshift({ name: "Collection Dr. Pinguin Porn, M.S.B. ExaStream", count: exaCount });
+      cats.unshift({ name: "ExaStream", count: exaCount });
     }
     if (newCount > 0) {
       cats.unshift({ name: 'Upload Terbaru', count: newCount });
