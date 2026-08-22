@@ -87,7 +87,7 @@
       embedUrl,
       category,
       date: v.date || new Date().toISOString().slice(0, 10),
-      tags: v.tags || detectTags(title)
+      tags: [...new Set([...(v.tags || detectTags(title) || []), 'baru'])]
     };
   }
 
